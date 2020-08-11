@@ -23,5 +23,14 @@ configuration check succeeds
 commit complete
 ```
 
+### Requirements
+This solution requires the following:
+1. One or multiple Juniper devices to be upgraded
+2. DHCP server configured with a pool of ip address and the Juniper ZTP extensions
+3. Web server to provide the Junos firmware files
+4. ASCII file called `firmwares` containing the Junos file to use in order to upgrade a Junos device
+5. Junos initial configuration file called `network-base-dhcp.conf`
+
+
 
 
