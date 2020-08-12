@@ -3,7 +3,7 @@
 ### Objective
 This script will automate the upgrade of a Juniper device to a final Junos version using
 different Junos firmwares. So far tested only on a few QFX (QFX10008/16, QFX5200) switches
-running Junos 15.1 and automatically upgraded to 17.2->18.3->19.4->20.1->20.2 without human 
+running Junos 15.1 and automatically upgraded to 17.4->18.4->19.4->20.2 without human 
 interaction
 
 The idea is to use the Juniper ZTP feature that is enabled by default in most of the switches.
@@ -44,7 +44,7 @@ In case you want to avoid the DHCP configuration and give it a try you still nee
    - ASCII file called `firmwares` containing the list of Junos files to use
    - The script `ztp-upgrade.slax`
 
-Then you can trigger the script via the following commands (assuming 10.1.1.1 is the ip address of the web server):
+Then log into the Junos device to be upgraded and run the following commands (assuming 10.1.1.1 is the ip address of the web server):
 ```
 root@qfx5200> configure
 root@qfx5200# set event-options generate-event ztp-upgrade time-interval 60
@@ -53,7 +53,48 @@ root@qfx5200# set event-options policy ztp-upgrade then execute-commands command
 root@qfx5200# commit
 ```
 
+The Web server should have the following files available:
+```
+[root@server html]# pwd
+/var/www/html
+[root@server html]# tree
+.
+├── firmwares
+├── ztp-upgrade.slax
+└── images
+    ├── jinstall-host-qfx-5e-flex-x86-64-17.4R3.16-secure-signed.tgz
+    ├── jinstall-host-qfx-5e-flex-x86-64-18.4R1.8-secure-signed.tgz
+    ├── jinstall-host-qfx-5e-flex-x86-64-18.4R3.3-secure-signed.tgz
+    ├── jinstall-host-qfx-5e-flex-x86-64-19.3R2.9-secure-signed.tgz
+    ├── jinstall-host-qfx-5e-flex-x86-64-19.4R1.10-secure-signed.tgz
+    ├── jinstall-host-qfx-5e-flex-x86-64-19.4R2.6-secure-signed.tgz
+    ├── jinstall-host-qfx-5e-flex-x86-64-20.1R1.11-secure-signed.tgz
+    └── jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
+```
+You need to create a `firmwares` file containing the list of junos firmwares to be used per model
+```
+cat /var/www/html/firmwares
+# No whitespaces between comma separated items
+# You can specify multiple entries, so different upgrades will be performed
+#
+# NOTE: Only one firmware version per major junos release will be used
+# In case of more than one version per major junos release, only the first
+# will be used. In the example below version 18.4R3.3 will be skipped
+# for a QFX10016 chassis
 
+# <Model,junos_firmware>
+# Model is given by the command "show version | match Model"
 
+# QFX5200
+# 15.1 => 17.4 => 18.4 => 19.4 => 20.2
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-17.4R3.16-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R3.3-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R1.8-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R2.7-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.3R1.9-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-19.4R2.6-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-19.3R1.8-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
+```
 
 
