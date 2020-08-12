@@ -1,0 +1,20 @@
+# No whitespaces between comma separated items
+# You can specify multiple entries, so different upgrades will be performed
+#
+# NOTE: Only one firmware version per major junos release will be used
+# In case of more than one version per major junos release, only the first 
+# will be used. In the example below version 18.4R3.3 will be skipped
+
+# <Model,junos_firmware>
+# Model is given by the command "show version | match Model"
+
+# QFX5200
+# 15.1 => 17.4 => 18.4 => 19.4 => 20.2
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-17.4R3.16-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R3.3-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R1.8-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R2.7-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.3R1.9-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-19.4R2.6-secure-signed.tgz
+qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
+
