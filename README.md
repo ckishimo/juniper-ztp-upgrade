@@ -142,19 +142,19 @@ Aug 12 14:48:48  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): R
 (...The device is being upgraded to Junos 20.2, a couple of reboots later...)
 
 # Once the device is back up again, the script will run again...
-Aug 10 13:36:45  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): New device model: qfx5200-32c-32q, serial: WH9999999999, junos: 20.2R1.10, ip: 10.1.1.2, iface: vme.0
-Aug 10 13:36:46  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Retrieving the list of Junos firmwares from: http://10.1.1.1/firmwares
-Aug 10 13:36:47  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 17.4R3.16-secure-signed.tgz
-Aug 10 13:36:48  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R3.3-secure-signed.tgz
-Aug 10 13:36:49  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R1.8-secure-signed.tgz
-Aug 10 13:36:50  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R2.7-secure-signed.tgz
-Aug 10 13:36:51  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.3R1.9-secure-signed.tgz
-Aug 10 13:36:52  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 19.4R2.6-secure-signed.tgz
-Aug 10 13:36:53  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 20.2R1.10-secure-signed.tgz
-Aug 10 13:36:54  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Target Junos version file for model qfx5200-32c-32q is: jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
-Aug 10 13:36:55  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Already running version 20.2R1.10. No need to upgrade
-Aug 10 13:37:10  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Trying default configuration file http://10.1.1.1/default.conf
-Aug 10 13:37:11  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Warning: Not able to find default configuration file http://10.1.1.1/default.conf
-Aug 10 13:37:28  Juniper-WH9999999999 cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Upgrade completed: qfx5200-32c-32q, serial: WH9999999999, junos: 20.2R1.10, boot: 2020-08-10 13:34:37 UTC, ip: 10.1.1.1.2
+Aug 12 15:07:20  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): New device model: qfx5200-32c-32q, serial: WH9999999999, junos: 20.2R1.10, boot: 2020-08-12 15:05:13 UTC, ip: 10.1.1.2
+Aug 12 15:07:21  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Retrieving the list of Junos firmwares from: http://10.1.1.1/firmwares
+Aug 12 15:07:22  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 17.4R3.16-secure-signed.tgz
+Aug 12 15:07:23  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R3.3-secure-signed.tgz
+Aug 12 15:07:24  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R1.8-secure-signed.tgz
+Aug 12 15:07:25  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R2.7-secure-signed.tgz
+Aug 12 15:07:26  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.3R1.9-secure-signed.tgz
+Aug 12 15:07:27  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 19.4R2.6-secure-signed.tgz
+Aug 12 15:07:28  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 20.2R1.10-secure-signed.tgz
+Aug 12 15:07:29  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Target Junos version file for model qfx5200-32c-32q is: jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
+Aug 12 15:07:30  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Already running version 20.2R1.10. No need to upgrade
+Aug 12 15:07:45  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Trying default configuration file http://10.1.1.1/default.conf
+Aug 12 15:07:46  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Warning: Not able to find default configuration file http://10.1.1.1/default.conf
+Aug 12 15:08:02  Juniper-WH9999999999 cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Upgrade completed: qfx5200-32c-32q, serial: WH9999999999, junos: 20.2R1.10, boot: 2020-08-12 15:05:13 UTC, ip: 10.1.1.2
 ```
 
