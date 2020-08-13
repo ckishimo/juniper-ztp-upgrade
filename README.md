@@ -1,5 +1,12 @@
 ## Juniper ZTP upgrade
 
+- [Objective](#Objective)
+- [Benefits](#Benefits)
+- [Requirements](#Requirements)
+   - [Minimal requirements](#minimal-requirements)
+- [Examples](#Examples)
+   - [Upgrade QFX5200 from Junos 20.1 to 20.2](#Upgrade-QFX5200-from-Junos-20.1-to-20.2)
+
 ### Objective
 This script will automate the upgrade of a Juniper device to a final Junos version using
 different Junos firmwares. So far tested only on a few QFX (QFX10008/16, QFX5200) switches
