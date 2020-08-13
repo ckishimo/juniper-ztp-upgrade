@@ -162,6 +162,6 @@ Aug 12 15:07:29  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): T
 Aug 12 15:07:30  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Already running version 20.2R1.10. No need to upgrade
 Aug 12 15:07:45  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Trying default configuration file http://10.1.1.1/default.conf
 Aug 12 15:07:46  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Warning: Not able to find default configuration file http://10.1.1.1/default.conf
+Aug 12 15:07:47  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Removing script from event-options
 Aug 12 15:08:02  Juniper-WH9999999999 cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Upgrade completed: qfx5200-32c-32q, serial: WH9999999999, junos: 20.2R1.10, boot: 2020-08-12 15:05:13 UTC, ip: 10.1.1.2
 ```
-
