@@ -72,8 +72,8 @@ The Web server should have the following files available:
     ├── jinstall-host-qfx-5e-flex-x86-64-17.4R3.16-secure-signed.tgz
     ├── jinstall-host-qfx-5e-flex-x86-64-18.4R1.8-secure-signed.tgz
     ├── jinstall-host-qfx-5e-flex-x86-64-18.4R3.3-secure-signed.tgz
-    ├── jinstall-host-qfx-5e-flex-x86-64-19.3R2.9-secure-signed.tgz
     ├── jinstall-host-qfx-5e-flex-x86-64-19.4R2.6-secure-signed.tgz
+    ├── jinstall-host-qfx-5e-flex-x86-64-19.3R2.9-secure-signed.tgz
     ├── jinstall-host-qfx-5e-flex-x86-64-20.1R1.11-secure-signed.tgz
     └── jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
 ```
