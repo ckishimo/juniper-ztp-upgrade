@@ -73,7 +73,6 @@ The Web server should have the following files available:
     ├── jinstall-host-qfx-5e-flex-x86-64-18.4R1.8-secure-signed.tgz
     ├── jinstall-host-qfx-5e-flex-x86-64-18.4R3.3-secure-signed.tgz
     ├── jinstall-host-qfx-5e-flex-x86-64-19.3R2.9-secure-signed.tgz
-    ├── jinstall-host-qfx-5e-flex-x86-64-19.4R1.10-secure-signed.tgz
     ├── jinstall-host-qfx-5e-flex-x86-64-19.4R2.6-secure-signed.tgz
     ├── jinstall-host-qfx-5e-flex-x86-64-20.1R1.11-secure-signed.tgz
     └── jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
@@ -86,8 +85,8 @@ cat /var/www/html/firmwares
 #
 # NOTE: Only one firmware version per major junos release will be used
 # In case of more than one version per major junos release, only the first
-# will be used. In the example below version 18.4R3.3 will be skipped
-# for a QFX10016 chassis
+# will be used. In the example below version 18.4R1.8 will be skipped
+# for a QFX5200 switch
 
 # <Model,junos_firmware>
 # Model is given by the command "show version | match Model"
@@ -97,10 +96,7 @@ cat /var/www/html/firmwares
 qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-17.4R3.16-secure-signed.tgz
 qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R3.3-secure-signed.tgz
 qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R1.8-secure-signed.tgz
-qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.4R2.7-secure-signed.tgz
-qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-18.3R1.9-secure-signed.tgz
 qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-19.4R2.6-secure-signed.tgz
-qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-19.3R1.8-secure-signed.tgz
 qfx5200-32c-32q,jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
 ```
 
@@ -134,8 +130,6 @@ Aug 12 14:34:14  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): R
 Aug 12 14:34:15  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 17.4R3.16-secure-signed.tgz
 Aug 12 14:34:16  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R3.3-secure-signed.tgz
 Aug 12 14:34:17  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R1.8-secure-signed.tgz
-Aug 12 14:34:18  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R2.7-secure-signed.tgz
-Aug 12 14:34:19  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.3R1.9-secure-signed.tgz
 Aug 12 14:34:20  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 19.4R2.6-secure-signed.tgz
 Aug 12 14:34:21  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 20.2R1.10-secure-signed.tgz
 Aug 12 14:34:22  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Target Junos version file for model qfx5200-32c-32q is: jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
@@ -154,8 +148,6 @@ Aug 12 15:07:21  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): R
 Aug 12 15:07:22  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 17.4R3.16-secure-signed.tgz
 Aug 12 15:07:23  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R3.3-secure-signed.tgz
 Aug 12 15:07:24  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R1.8-secure-signed.tgz
-Aug 12 15:07:25  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.4R2.7-secure-signed.tgz
-Aug 12 15:07:26  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 18.3R1.9-secure-signed.tgz
 Aug 12 15:07:27  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 19.4R2.6-secure-signed.tgz
 Aug 12 15:07:28  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Skip Junos file 20.2R1.10-secure-signed.tgz
 Aug 12 15:07:29  Registering cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Target Junos version file for model qfx5200-32c-32q is: jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
