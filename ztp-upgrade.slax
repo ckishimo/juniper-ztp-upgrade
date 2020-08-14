@@ -1,0 +1,636 @@
+version 1.0;
+
+/*
+ Copyright (c) 2019, carles.kishimoto@gmail.com
+
+ Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ use this file except in compliance with the License. You may obtain a copy of
+ the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ License for the specific language governing permissions and limitations under
+ the License.
+*/
+
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+
+ns func extension = "http://exslt.org/functions";
+ns ext = "http://xmlsoft.org/XSLT/namespace";
+ns ztp extension = "http://xml.juniper.net/junos/ztp";
+
+import "../import/junos.xsl";
+
+var $arguments = {
+    <argument> {
+        <name> "server";
+        <description> "ip address of http server";
+    }
+    <argument> {
+        <name> "output";
+        <description> "Output can be sent to: stdout, syslog, both";
+    }
+}
+
+param $output;
+param $server;
+var $SERVER = "http://" _ $server;
+
+
+/* ========================================== */
+/* Update the following variables accordingly */
+/* ========================================== */
+
+/* Prefix for all syslog messages written by this script */
+var $PREFIX = "Upgrade";
+/* Hostname of the device once it has been upgraded. It will be $HOSTNAME-DONE + Serial_number */
+/* IMPORTANT: Make sure the current hostname does not contain $HOSTNAME-DONE, otherwise the process will not start!! */
+var $HOSTNAME-DONE = "Juniper";
+/* Name of the file that contains tuples <Junos_model,Junos_firmware_file> */
+var $SERVER-URL = $SERVER _ "/firmwares";
+/* Location of all Junos files */
+var $JUNOS-URL = $SERVER _ "/images"; 
+/* Name of the config file to load override once the device has been upgraded (Optional) */
+var $DEFAULT-CONFIG = $SERVER _ "/default.conf";
+
+/* ========================================== */
+
+match / {
+<op-script-results> {
+
+     /* Open connection */
+     var $connection = jcs:open();
+
+     mvar $message = ""; 
+     var $hostname = ztp:get-hostname($connection);
+     var $serial = ztp:get-serial-number($connection);
+     var $model = ztp:get-device-model($connection);
+     var $version = ztp:get-junos-version($connection);
+     var $boottime = ztp:get-boottime($connection);
+
+     /* Is the script already running ? */
+     if  ($hostname == "Registering") {
+         /* Assume there is already a process running */
+         /*  
+            set $message = "A process is already running according to hostname. Aborting"; 
+            call syslog-message($serial, $m = $message); 
+         */
+         <xsl:message terminate="yes">;
+     }
+
+     /* Check if there is a pending reboot: show system reboot */
+     var $reb = <get-reboot-information>;
+     var $reb-res = jcs:execute($connection, $reb);
+     if (contains($reb-res, "reboot requested")) {
+         /* Silently terminate */
+         <xsl:message terminate="yes">; 
+     }
+
+     /* contains() is case-sensitive! */
+     if (contains($hostname, $HOSTNAME-DONE)) {
+         /* Assume the switch is already upgraded/configured */
+         set $message = "Device " _ $hostname _ " already upgraded/configured according to hostname. Aborting";
+         call syslog-message($serial, $m = $message);
+         <xsl:message terminate="yes">;
+
+     } else if  ($hostname != "Upgraded") {
+         /* Any other hostname except "Upgraded", "Registering" or "$PATTERN-DONE" will trigger device upgrade */
+         /* step 03: Change hostname to Unregistered. Starting upgrade process */
+         call ztp:change-hostname($connection, $name = "Registering");
+
+         /* We return IP_ADDRESS/Interface as result */
+         var $ipiface = ztp:get-ipaddress($connection);
+         if (jcs:empty($ipiface)) {
+             call ztp:end-script($connection, $serial, $name = "Unregistered", $m = "Error: Not able to find the current ip address in use. Aborting");
+         } 
+         var $sep = jcs:split("/" , $ipiface, 2);
+         var $ipaddress = $sep[1];
+         var $interface = $sep[2];
+
+         /* step 04: syslog message starting upgrade process */
+         set $message = "New device model: " _ $model _ ", serial: " _ $serial _ ", junos: " _ $version _", boot: " _ $boottime _ ", ip: " _ $ipaddress _ ", iface: " _ $interface;
+         call syslog-message($serial, $m = $message);
+
+         /* step 05: retrieve the list of firmwares from remote server */
+         call syslog-message($serial, $m = "Retrieving the list of Junos firmwares from: " _ $SERVER-URL);
+
+         var $dstfile = "/var/tmp/firmwares";
+         var $copy-cmd = <file-copy> { <source> $SERVER-URL; <destination> $dstfile; }
+         var $copy-rsp = jcs:execute($connection, $copy-cmd);
+         /* If file does not exist we abort the registration */
+         if ($copy-rsp//self::xnm:error) {
+             call ztp:end-script($connection, $serial, $name = "Unregistered", $m = "Error: Unable to copy file from: " _ $SERVER-URL _ " (" _ $copy-rsp/self::xnm:error/message _ "). Aborting"); 
+         }
+
+         var $get-cmd = <file-get> { <encoding> "ascii"; <filename> $dstfile; }
+         var $get-rsp = jcs:execute($connection, $get-cmd);
+         if (!($get-rsp/file-contents)) {
+             call ztp:end-script($connection, $serial, $name = "Unregistered", $m = "Error: File " _ $dst-file _ " has no contents. Aborting");
+         }
+
+         /* step 06: parse the list of firmwares and get the one we should upgrade to */
+         var $target = ztp:get-target-junos-version($get-rsp/file-contents, $model, $version, $serial); 
+         if (jcs:empty($target)) {
+             /* We did not find the junos version in the firmwares file */
+             call ztp:end-script($connection, $serial, $name = "Unregistered", $m = "Error: Not able to determine the target Junos version for model " _ $model _ ". You need to update remote file " _ $SERVER-URL _ ". Aborting");
+
+         } else {
+             set $message = "Target Junos version file for model " _ $model _ " is: " _ $target;
+             call syslog-message($serial, $m = $message);
+         
+             if (contains($target, $version)) {
+                 /* No need to upgrade */
+                 set $message = "Already running version " _ $version _ ". No need to upgrade";
+                 call syslog-message($serial, $m = $message);
+                 /* Go to registration process, step 11 below */
+                 call ztp:change-hostname($connection, $name = "Upgraded");
+
+             } else {
+                 /* 
+                    Clean up space before the upgrade 
+                    Manual command: request system storage cleanup no-confirm 
+                    NOTE: Any error while cleaning space will be caught during the software installation if any 
+                 */
+
+                 set $message = "Cleaning up some storage space";
+                 call syslog-message($serial, $m = $message);
+                 var $cmd-clean = <request-system-storage-cleanup> {
+                        <no-confirm>;
+                 }
+                 var $out-clean = jcs:execute($connection, $cmd-clean); 
+
+                 /* step 07: Download the firmware */
+                 set $message = "Upgrading to " _ $target _ ". Download in progress. Be patient";
+                 call syslog-message($serial, $m = $message);
+
+                 /* File is being copied */
+                 /* TODO: Any way to catch the progress */
+                 /* 
+                    Avoid using the `file copy` command, use the shell instead. 
+                    Check the following KB (space issues)
+                    https://kb.juniper.net/InfoCenter/index?page=content&id=KB27965&cat=FTP&actp=LIST
+                 */
+ 
+                 /* Use /tmp as temporary folder instead of /var/tmp */
+                 var $tmpfile = "/tmp/" _ $target;
+                 var $command = "fetch -o " _ $tmpfile _ " " _ $JUNOS-URL _ "/" _ $target;
+                 var $copy-sw = <request-shell-execute> {
+                      <command> $command;
+                 }
+                 var $copy-rspsw = jcs:execute($connection, $copy-sw); 
+                 if (($copy-rspsw/..//self::xnm:error)) {
+                     call ztp:end-script($connection, $serial, $name = "Unregistered", $m = "Error: Unable to copy file from: " _ $JUNOS-URL _ "/" _ $target _ " (" _ $copy-rspsw/..//self::xnm:error/message _ ") to " _ $tmpfile _ ". Aborting");
+                 }
+
+                 /* Check if the file exists in the remote server */
+                 if (contains($copy-rspsw/..//output/text(), "Not Found")) {
+                     call ztp:end-script($connection, $serial, $name = "Unregistered", $m = "Error: Unable to copy file from: " _ $JUNOS-URL _ "/" _ $target _ " to " _ $tmpfile _ " (Not found). Aborting");
+                 }
+
+                 /* Check if file has been copied locally */
+                 var $file-list = <file-list> {
+                        <path> $tmpfile;
+                 }
+                 var $file-rsp = jcs:execute($connection, $file-list); 
+                 expr jcs:output($file-rsp/..//output/text());
+                 if (contains($file-rsp/..//output/text(), "No such file or directory")) {
+                     call ztp:end-script($connection, $serial, $name = "Unregistered", $m = "Error: File " _ $tmpfile _ " does not exist. Aborting");
+                 }
+
+                 set $message = "File from: " _ $JUNOS-URL _ "/" _ $target _ " copied to " _ $tmpfile _ " successfully";
+                 call syslog-message($serial, $m = $message);
+
+                 /*
+                    Proceed to install the file
+                    Manual command: request system software add http://10.1.1.2/images/jinstall-host-qfx-5e-flex-x86-64-19.1R1.6-secure-signed.tgz
+                    SHELL: /usr/libexec/ui/package update -no-validate /var/tmp/jinstall-host-qfx-5e-flex-x86-64-18.4R2.7-secure-signed.tgz
+                 */
+                 set $message = "Installing file " _ $tmpfile _ " with options: unlink";
+                 call syslog-message($serial, $m = $message);
+                 var $cmd-ver = <request-package-add> { 
+                     <package-name> $tmpfile; 
+                     <unlink>;
+                 } 
+                 var $out = jcs:execute($connection, $cmd-ver); 
+		 if (contains($out/..//output/text(), "Failed") || contains($out/..//output/text(), "ERROR") || contains($out/..//output/text(), "failed") || contains($out/..//output/text(), "error")) { 
+                     call ztp:end-script($connection, $serial, $name = "Unregistered", $m = "Error: Unable to install file from: " _ $tmpfile _ "(" _ $out/..//output/text() _ "). Aborting");
+                 }
+
+                 set $message = "Junos " _ $target _ " was just installed. Output: " _ $out/..//output/text();
+                 call syslog-message($serial, $m = $message);
+
+                 /* step 08: Reboot */
+                 set $message = "Rebooting in 1 minute... (to cancel type: clear system reboot)";
+                 call syslog-message($serial, $m = $message);
+                 /* END upgrade process */
+
+                 /* step 09: Change the hostname before the reboot */
+	         /* In fact change hostname to Unregistered instead of Upgraded so we can perform multiple upgrades after the reboot */
+                 call ztp:change-hostname($connection, $name = "Unregistered"); 
+
+                 var $cmd-reb = <request-reboot>;
+                 var $out-reb = jcs:execute($connection, $cmd-reb);
+
+                 /* Finish the script, while waiting the reboot to happen */
+                 <xsl:message terminate="yes">;
+             } 
+         }
+     }
+
+     var $hostname2 = ztp:get-hostname($connection);
+     if ($hostname2 == "Upgraded") {
+         /* Router is already upgraded */
+         var $switch-name = $HOSTNAME-DONE _ "-" _ $serial;
+
+         /* step 10: Configure the device with a generic configuration */
+         set $message = "Trying default configuration file " _ $DEFAULT-CONFIG;
+         call syslog-message($serial, $m = $message);
+
+         mvar $config = "/var/tmp/" _ $switch-name _ ".conf";
+         var $config-cmd2 = <file-copy> { <source> $DEFAULT-CONFIG; <destination> $config; }
+         var $config-rsp2 = jcs:execute($connection, $config-cmd2);
+         if ($config-rsp2//self::xnm:error) { 
+             set $message = "Warning: Not able to find default configuration file " _ $DEFAULT-CONFIG;
+             call syslog-message($serial, $m = $message);
+
+             /* In that case remove the event-options and keep the original configuration */
+             set $message = "Removing script from event-options";
+             call syslog-message($serial, $m = $message);
+             call ztp:remove-script($connection);
+
+         } else {
+             /* Load configuration */
+             set $message = "Loading override configuration with " _ $DEFAULT-CONFIG;
+             call syslog-message($serial, $m = $message);
+             call ztp:load-configuration($connection, $file = $config);
+ 
+             set $message = "Upgrade completed after loading configuration...";
+             call syslog-message($serial, $m = $message);
+         }
+
+         /* Change the hostname */
+         /* NOTE: We may be overwriting the hostname just loaded via config file... */
+         call ztp:change-hostname($connection, $name = $switch-name);
+
+         /* Write summary messages. Retrieve again basic information */
+         var $final-hostname = ztp:get-hostname($connection);
+         var $final-version = ztp:get-junos-version($connection);
+         var $final-boottime = ztp:get-boottime($connection);
+         var $final-ipiface = ztp:get-ipaddress($connection);
+
+         mvar $final-ip = "NA";
+         mvar $final-iface = "NA";
+         mvar $final-mac = "NA";
+         if (!(jcs:empty($final-ipiface))) {
+             var $fsep = jcs:split("/" , $final-ipiface, 2);
+             set $final-ip = $fsep[1];
+             set $final-iface = $fsep[2];
+	     set $final-mac = ztp:get-mac-address($connection, $final-iface);
+         }
+         set $message = "Upgrade completed: " _ $model _ ", serial: " _ $serial _ 
+			", junos: " _ $final-version _ 
+			", boot: " _ $final-boottime _ 
+			", ip: " _ $final-ip _ 
+			", mac: " _ $final-mac _
+			", iface: " _ $final-iface;
+         call syslog-message($serial, $m = $message);
+     }
+     expr jcs:close($connection);   
+}
+}
+
+/* ------------------------------ */
+/* Send custom messages to syslog */
+/* ------------------------------ */
+template syslog-message($serial, $m)
+{
+   var $SYSLOG = "user.notice";
+   var $SYSLOG_TAG = $PREFIX _ " Juniper ZTP (s/n: " _ $serial _"): ";
+
+   if ($output == "stdout") {
+       expr jcs:output($SYSLOG _ " " _ $SYSLOG_TAG _ $m);
+   } else if ($output == "syslog") {
+       expr jcs:syslog($SYSLOG, $SYSLOG_TAG, $m); 
+   } else {
+       /* Assume both by default */
+       expr jcs:output($SYSLOG _ " " _ $SYSLOG_TAG _ $m);
+       expr jcs:syslog($SYSLOG, $SYSLOG_TAG, $m); 
+   } 
+   /* Give time to syslog-ng to send the mails. Otherwise we may have unordered mails received */
+   expr jcs:sleep(1);
+}
+
+/* --------------------------------- */
+/* Load override a new configuration */
+/* --------------------------------- */
+template ztp:load-configuration($connection, $file)
+{
+   var $action = "override";
+   var $serial = ztp:get-serial-number($connection);
+   var $load-config-rpc = <load-configuration action=$action url=$file format="text">;
+   /* Load a new configuration */
+   var $load-config-results = jcs:execute($connection, $load-config-rpc);
+    
+   if ($load-config-results//xnm:error) {
+       call syslog-message($serial, $m = "Error: Unable to load configuration file " _ $file _ " (" _ $load-config-results//xnm:error/message _ "). Aborting");
+   } else {
+       /* Commit the configuration */
+       var $name = ztp:get-script-name;
+       var $commit-configuration = <commit-configuration> {
+           <log> "ZTP load-configuration committed by " _ $name;
+       };
+       var $commit-rsp = jcs:execute($connection, $commit-configuration);
+       if ($commit-rsp//self::xnm:error) {
+           call syslog-message($serial, $m = "Error: Unable to commit configuration. (" _ $commit-rsp//xnm:error/message _ "). Aborting");
+       }
+   }
+}
+
+/* ------------------------------------------------------ */
+/* Change the host-name of the device to represent status */
+/* ------------------------------------------------------ */
+template ztp:change-hostname($connection, $name)
+{
+   var $serial = ztp:get-serial-number($connection);
+   var $load-config-rpc = <load-configuration action = "merge" format = "xml"> {
+       <configuration> {
+            <system> {
+                <host-name> $name;
+            }
+       }
+   }
+   var $load-rsp = jcs:execute($connection, $load-config-rpc);
+   if ($load-rsp//self::xnm:error) {
+       call syslog-message($serial, $m = "Error: Unable to load configuration. (" _ $load-rsp//self::xnm:error/message _ ").");
+   }
+   else { 
+      /* Commit the configuration */
+      var $name = ztp:get-script-name();
+      var $commit-configuration = <commit-configuration> {
+          <log> "ZTP change hostname committed by " _ $name;
+      };
+      var $commit-rsp = jcs:execute($connection, $commit-configuration);
+      if ($commit-rsp//self::xnm:error) {
+          call syslog-message($serial, $m = "Error: Unable to commit configuration. (" _ $commit-rsp//self::xnm:error/message _ ").");
+      }
+   }
+}
+
+/* -------------------------------------------- */
+/* Terminate the script by setting the hostname */
+/* -------------------------------------------- */
+template ztp:end-script($connection, $serial, $name, $m)
+{
+   call syslog-message($serial, $m = $m);
+   call ztp:change-hostname($connection, $name = $name);
+   <xsl:message terminate="yes">;
+}
+
+/* -------------------------------------- */
+/* Get current IPv4 address and interface */
+/* -------------------------------------- */
+/* We do not expect multiple ips configured. Discard Junos internal: 128.0.x.x and 192.168.x.x */
+<func:function name="ztp:get-ipaddress"> {
+   param $connection;
+
+   var $rpc-iface = {
+       <get-interface-information> {
+            <terse>;
+       }
+   }
+   mvar $found = 0;
+   var $ifaces = jcs:execute($connection, $rpc-iface);
+   for-each ($ifaces/physical-interface/logical-interface[address-family/address-family-name = "inet"]) {
+       if (admin-status='up' and oper-status='up') {
+           /* There are logical interfaces without ip (ie: pfh-0/0/0.16383) */
+           if (address-family/interface-address/ifa-local != "") {
+               if (!(starts-with(address-family/interface-address/ifa-local, "128.0"))) {
+                   if (!(starts-with(address-family/interface-address/ifa-local, "192.168"))) {
+                       if ($found == 0) {
+      		           var $address = jcs:split("/" , ./address-family/interface-address/ifa-local, 2);
+                           var $iface = ./name;
+                           var $result = $address[1] _ "/" _ $iface;
+                           set $found = 1;
+                           <func:result select="$result">;
+                       }
+                   }
+               }
+           }
+       }
+    }
+}
+
+/* -------------------------------- */
+/* Get current IPv4 default gateway */
+/* -------------------------------- */
+<func:function name="ztp:get-defaultgw"> {
+   param $connection;
+
+   var $rpc-gate = {
+       <get-route-information> {
+           <destination> "0.0.0.0/0";
+       }
+   }
+   var $gw = jcs:execute($connection, $rpc-gate);
+   <func:result select="$gw/route-table/rt/rt-entry/nh/to">; 
+}
+
+/* -------------------------------------- */
+/* Get MAC address from a given interface */
+/* -------------------------------------- */
+<func:function name="ztp:get-mac-address"> {
+   param $connection;
+   param $interface;
+
+   mvar $phy = $interface;
+   /* Remove the logical unit if any */
+   if (contains($interface, ".")) {
+       var $value = jcs:split("\\.", $interface, 2);
+       set $phy = $value[1];
+   }
+   var $rpc-iface = {
+       <get-interface-information> {
+          <interface-name> $phy;
+       }
+   }
+   var $mac = jcs:execute($connection, $rpc-iface);
+   <func:result select="$mac/physical-interface/hardware-physical-address">;
+}
+
+/* ----------------------------- */
+/* Get the current JUNOS version */
+/* ----------------------------- */
+<func:function name="ztp:get-junos-version"> {
+   param $connection;
+
+   /* 'qfx5200-32c-32q' gets from 'multi-routing-engine-item' while other models do not */
+   var $version = jcs:execute($connection, "get-software-information");
+   if ($version/multi-routing-engine-item/software-information/junos-version) {
+       <func:result select="$version/multi-routing-engine-item/software-information/junos-version">;
+   } else {
+       <func:result select="$version/junos-version">;
+   }
+}
+
+/* -------------------- */
+/* Get the device model */
+/* -------------------- */
+<func:function name="ztp:get-device-model"> {
+   param $connection;
+    
+   /* 'qfx5200-32c-32q' gets from 'multi-routing-engine-item' while other models do not */
+   var $model = jcs:execute($connection, "get-software-information");
+   if ($model/multi-routing-engine-item/software-information/product-model) {
+       <func:result select="$model/multi-routing-engine-item/software-information/product-model">;
+   } else {
+       <func:result select="$model/product-model">;
+   }
+}
+
+/* ---------------------------- */
+/* Get the device serial number */
+/* ---------------------------- */
+<func:function name="ztp:get-serial-number"> {
+   param $connection;
+
+   var $chassis = jcs:execute($connection, "get-chassis-inventory");
+   if ($chassis/chassis/serial-number) {
+       <func:result select="$chassis/chassis/serial-number">; 
+   } else {
+       <func:result select="Unknown">;
+   }
+}
+
+/* ------------------------ */
+/* Get the device boot time */
+/* ------------------------ */
+<func:function name="ztp:get-boottime"> {
+   param $connection;
+
+   var $uptime = jcs:execute($connection, "get-system-uptime-information");
+   if (jcs:empty($uptime/system-booted-time/date-time)) {
+       <func:result select="$uptime/multi-routing-engine-item/system-uptime-information/system-booted-time/date-time">;
+   } else {
+       <func:result select="$uptime/system-booted-time/date-time">;
+   }
+}
+
+/* ---------------- */
+/* Get the hostname */
+/* ---------------- */
+<func:function name="ztp:get-hostname"> {
+   param $connection;
+
+   var $version = jcs:execute($connection, "get-software-information");
+   if ($version/host-name) {
+       <func:result select="$version/host-name">;
+   } else if ($version/multi-routing-engine-item/software-information/host-name) {
+       <func:result select="$version/multi-routing-engine-item/software-information/host-name">;
+   }
+}
+
+/* --------------------------------*/
+/* Return the target JUNOS version */
+/* --------------------------------*/
+<func:function name="ztp:get-target-junos-version"> {
+   param $contents;
+   param $model;
+   param $version;
+   param $serial;
+
+   mvar $found = 0;
+   mvar $new_junos_file = "";
+   var $lines = jcs:break-lines($contents);
+   for-each ($lines) {
+      if (!(starts-with(.,'#'))) {
+          var $sub = jcs:split("," , ., 2);
+          if ($model == $sub[1]) {
+              if ($found == 0) { 
+                  /* Check version compared to the current junos version */
+                  var $major  = jcs:split("\\.", $version, 2);
+
+                  /* Filename example: jinstall-host-qfx-10-m-flex-x86-64-17.2R3.4-secure-signed.tgz */
+                  set $new_junos_file = $sub[2];
+
+                  /* Assume the file name follows the following pattern */
+                  /* var $pattern = "([0-9]*)(\\.)([0-9]*)(R)([0-9]*)(\\.)([0-9]*)(-secure-signed.tgz)"; */
+                  /* Support a patched version like: jinstall-host-qfx-10-f-x86-64-19.1I-20191117.0.1748-secure-signed.tgz */
+                  var $pattern = "([0-9]*)(\\.)([0-9]*)(R|I)([0-9\\.-]*)(\\.)([0-9]*)(-secure-signed.tgz)";
+
+                  var $new_junos = jcs:regex($pattern, $new_junos_file);
+                  var $major2 = jcs:split("\\.", $new_junos[1], 2);
+                  if ($major2[1] > $major[1]) {
+                      set $found = 1; 
+                      <func:result select="$new_junos_file">;
+                  } else {
+                      /* Skip this file as the version is lower than the current Junos */
+                      var $miss = "Skip Junos file " _ $new_junos;
+                      call syslog-message($serial, $m = $miss);
+
+                  }
+              }
+          }
+      }
+   }
+ 
+   if ($found == 0) { 
+       /* Return the last junos file read */
+       <func:result select="$new_junos_file">;
+   }
+   /* Otherwise we are not able to determine the firmware to be used */
+}
+
+/* -----------------------*/
+/* Return the script name */
+/* -----------------------*/
+<func:function name="ztp:get-script-name"> {
+   /* Remote script example: /var/tmp/tmp_opVG6BPO/...transferring.file.........XNdqo6/ztp-upgrade.slax */
+   mvar $name = $script;
+   if (contains($script, "/")) {
+       var $tmp = jcs:split("/", $script);
+       var $n = count($tmp);
+       set $name = $tmp[number($n)];
+   }
+   <func:result select="$name">;
+}
+
+/* ------------------------------- */
+/* Remove execution of SLAX script */
+/* ------------------------------- */
+template ztp:remove-script($connection)
+{
+   var $serial = ztp:get-serial-number($connection);
+   /* FIXME: Remove only the event "ztp-upgrade" */
+   /* FIXME: Remove only the policy "ztp-upgrade" */
+   var $load-config-rpc = <load-configuration action = "merge" format = "xml"> {
+       <configuration> {
+            <event-options> {
+                <generate-event delete="delete">;
+                <policy delete="delete">;
+            }
+       }
+   }
+   var $load-rsp = jcs:execute($connection, $load-config-rpc);
+   if ($load-rsp//self::xnm:error) {
+       call syslog-message($serial, $m = "Error: Unable to load configuration. (" _ $load-rsp//self::xnm:error/message _ ").");
+   }
+   else {
+      /* Commit the configuration */
+      var $name = ztp:get-script-name();
+      var $commit-configuration = <commit-configuration> {
+          <log> "ZTP remove event-options committed by " _ $name;
+      };
+      var $commit-rsp = jcs:execute($connection, $commit-configuration);
+      if ($commit-rsp//self::xnm:error) {
+          call syslog-message($serial, $m = "Error: Unable to commit configuration. (" _ $commit-rsp//self::xnm:error/message _ ").");
+      }
+   }
+}
+
+
+
