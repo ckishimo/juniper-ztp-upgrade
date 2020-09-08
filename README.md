@@ -77,7 +77,7 @@ The Web server should have the following files available:
     ├── jinstall-host-qfx-5e-flex-x86-64-20.1R1.11-secure-signed.tgz
     └── jinstall-host-qfx-5e-flex-x86-64-20.2R1.10-secure-signed.tgz
 ```
-You need to create a `firmwares` file containing the list of junos firmwares to be used per model
+You need to create a `firmwares` file containing the list of junos firmwares to be used per model. The following is an example for a QFX5200
 ```
 cat /var/www/html/firmwares
 # No whitespaces between comma separated items
@@ -157,3 +157,80 @@ Aug 12 15:07:46  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Warn
 Aug 12 15:07:47  Upgraded cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Removing script from event-options
 Aug 12 15:08:02  Juniper-WH9999999999 cscript: Upgrade Juniper ZTP (s/n: WH9999999999): Upgrade completed: qfx5200-32c-32q, serial: WH9999999999, junos: 20.2R1.10, boot: 2020-08-12 15:05:13 UTC, ip: 10.1.1.2
 ```
+
+### DHCP
+- In case you have a DHCP server, the minimal configuration is a pool with the Juniper ZTP options, something like
+```
+$ cat dhcpd.conf
+# dhcpd.conf
+#
+
+default-lease-time 600;
+max-lease-time 7200;
+#authoritative;
+log-facility local7;
+
+option ztp-file-server code 150 = { ip-address };
+option space ztp-ops;
+option ztp-ops.image-file-name code 0 = text;
+option ztp-ops.config-file-name code 1 = text;
+option ztp-ops.image-file-type code 2 = text;
+option ztp-ops.transfer-mode code 3 = text;
+option ztp-ops-encap code 43 = encapsulate ztp-ops;
+
+# This is a very basic subnet declaration.
+subnet 10.5.5.0 netmask 255.255.255.0 {
+  range 10.5.5.100 10.5.5.200;
+  option domain-name "internal.example.org";
+  option routers 10.5.5.1;
+  option broadcast-address 10.5.5.255;
+  default-lease-time 600;
+  max-lease-time 7200;
+
+  host juniper {
+     hardware ethernet ec:38:73:56:83:61;
+     fixed-address 10.5.5.100;
+     option ztp-file-server 10.5.5.1;
+     option host-name "ztp";
+     option ztp-ops.config-file-name "ztp-upgrade.slax";
+     # firmware option is not used
+     # option ztp-ops.image-file-name "/dist/images/jinstall-host-qfx-5e-flex-x86-64-19.1R1.6-secure-signed.tgz";
+     option ztp-ops.transfer-mode "http";
+  }
+}
+```
+
+- Start the DHCP server like:
+```
+# -f: foreground
+# -d: debugging
+# -cf: configuration file
+$ ifconfig enp1s0f1 10.5.5.1 netmask 255.255.255.0 up
+$ dhcpd -f -d -cf /etc/dhcpd.conf enp1s0f1
+```
+
+- The Juniper device should get an ip address and the SLAX script. The logs should be something like:
+```
+Auto Image Upgrade: Interface::   "vme"
+
+Auto Image Upgrade: Server::      "10.5.5.1"
+
+Auto Image Upgrade: Image File::  "NOT SPECIFIED"
+
+Auto Image Upgrade: Config File:: "ztp-upgrade.slax"
+
+Auto Image Upgrade: Gateway::     "10.5.5.1"
+
+Auto Image Upgrade: Protocol::    "http"
+
+Auto Image Upgrade: Start fetching ztp-upgrade.slax file from server 10.5.5.1 t
+hrough vme using http
+
+
+Auto Image Upgrade: File ztp-upgrade.slax fetched from server 10.5.5.1 through
+vme
+
+Auto Image Upgrade: Applying ztp-upgrade.slax file configuration fetched from s
+erver 10.5.5.1 through vme
+```
+- After that the device will start the upgrade process
