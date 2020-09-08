@@ -154,6 +154,9 @@ $ dhcpd -f -d -cf /etc/dhcpd.conf enp1s0f1
 
 - The Juniper device should get an ip address and the SLAX script. The logs should be something like:
 ```
+root@myrouter>
+Auto Image Upgrade: Active on INET client interface : vme.0
+
 Auto Image Upgrade: Interface::   "vme"
 
 Auto Image Upgrade: Server::      "10.5.5.1"
@@ -169,14 +172,23 @@ Auto Image Upgrade: Protocol::    "http"
 Auto Image Upgrade: Start fetching ztp-upgrade.slax file from server 10.5.5.1 t
 hrough vme using http
 
-
 Auto Image Upgrade: File ztp-upgrade.slax fetched from server 10.5.5.1 through
 vme
 
-Auto Image Upgrade: Applying ztp-upgrade.slax file configuration fetched from s
-erver 10.5.5.1 through vme
+Auto Image Upgrade: Executing script ztp-upgrade.slax
+
+Broadcast Message from root@Unregistered
+        (no tty) at 13:57 UTC...
+
+Auto image Upgrade: Stopped
+
+{master:0}
+root@Unregistered>
+
+{master:0}
+root@Unregistered>
 ```
-- After that the device will start the upgrade process
+- After that the device will start the upgrade process in about 60 secs
 
 ### Examples
 
