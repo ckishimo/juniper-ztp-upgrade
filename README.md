@@ -4,6 +4,7 @@
 - [Benefits](#Benefits)
 - [Requirements](#Requirements)
    - [Minimal requirements](#minimal-requirements)
+- [DHCP](#DHCP)
 - [Examples](#Examples)
    - [Upgrade QFX5200 from Junos 20.1 to 20.2](#Upgrade-QFX5200-from-Junos-201-to-202)
 
