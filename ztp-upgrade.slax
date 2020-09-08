@@ -1,3 +1,5 @@
+#!/usr/libexec/ui/cscript
+
 version 1.0;
 
 /*
@@ -28,18 +30,17 @@ import "../import/junos.xsl";
 
 var $arguments = {
     <argument> {
-        <name> "server";
-        <description> "ip address of http server";
-    }
-    <argument> {
         <name> "output";
         <description> "Output can be sent to: stdout, syslog, both";
     }
 }
 
 param $output;
-param $server;
-var $SERVER = "http://" _ $server;
+
+#
+# Update the ip address accordingly 
+#
+var $SERVER = "http://" _ "10.5.5.1";
 
 
 /* ========================================== */
