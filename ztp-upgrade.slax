@@ -37,9 +37,9 @@ var $arguments = {
 
 param $output;
 
-#
-# Update the ip address accordingly 
-#
+/*
+  Update the following ip address accordingly 
+*/
 var $SERVER = "http://" _ "10.5.5.1";
 
 
