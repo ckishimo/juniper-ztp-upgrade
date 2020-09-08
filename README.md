@@ -34,7 +34,7 @@ commit complete
 
 ### Requirements
 This solution requires the following:
-1. Update the server ip address in the `ztp-upgrade.slax` script
+1. Update the server ip address in the `ztp-upgrade.slax` script (variable $SERVER)
 2. One Juniper device to be upgraded
 3. DHCP server configured with a pool of ip address and the Juniper ZTP extensions
 4. Junos initial configuration file (`network-base-dhcp.conf`) provided by the DHCP server
