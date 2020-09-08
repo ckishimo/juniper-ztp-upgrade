@@ -34,10 +34,11 @@ commit complete
 
 ### Requirements
 This solution requires the following:
-1. One Juniper device to be upgraded
-2. DHCP server configured with a pool of ip address and the Juniper ZTP extensions
-3. Junos initial configuration file (`network-base-dhcp.conf`) provided by the DHCP server
-4. Web server providing:
+1. Update the server ip address in the `ztp-upgrade.slax` script
+2. One Juniper device to be upgraded
+3. DHCP server configured with a pool of ip address and the Juniper ZTP extensions
+4. Junos initial configuration file (`network-base-dhcp.conf`) provided by the DHCP server
+5. Web server providing:
    - All Junos firmware files to be used (ie: `jinstall*`)
    - ASCII file called `firmwares` containing the list of Junos files to use
    - The script `ztp-upgrade.slax`
@@ -57,7 +58,7 @@ Then log into the Junos device to be upgraded and run the following commands (as
 root@qfx5200> configure
 root@qfx5200# set event-options generate-event ztp-upgrade time-interval 60
 root@qfx5200# set event-options policy ztp-upgrade events ztp-upgrade
-root@qfx5200# set event-options policy ztp-upgrade then execute-commands commands "op url http://10.5.5.1/ztp-upgrade.slax output syslog server 10.5.5.1"
+root@qfx5200# set event-options policy ztp-upgrade then execute-commands commands "op url http://10.5.5.1/ztp-upgrade.slax output syslog"
 root@qfx5200# commit
 ```
 
@@ -176,14 +177,6 @@ Auto Image Upgrade: File ztp-upgrade.slax fetched from server 10.5.5.1 through
 vme
 
 Auto Image Upgrade: Executing script ztp-upgrade.slax
-
-Broadcast Message from root@Unregistered
-        (no tty) at 13:57 UTC...
-
-Auto image Upgrade: Stopped
-
-{master:0}
-root@Unregistered>
 
 {master:0}
 root@Unregistered>
